@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#fdf2f8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="フィットネス">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<title>フィットネス利用管理</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png">
+<link rel="icon" type="image/png" sizes="64x64" href="icons/icon-64.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+
+<script>
+  /* ==========================================================
+     パスコードロック設定  ―  書き換えるのはこの1行だけです
+     ----------------------------------------------------------
+     ロックしない場合： null のまま
+     ロックする場合  ： アプリの「設定とバックアップ」→「パスコードロック」で
+                        生成された文字列を、"" の中に貼り付けてください。
+     例： window.APP_LOCK = "3f9a1c...（64文字）";
+     ========================================================== */
+  window.APP_LOCK = null;
+</script>
+<style>
+  :root {
+    --pink: #ec4899;
+    --pink-soft: #fce7f3;
+    --pink-ink: #9d174d;
+    --purple: #7c3aed;
+    --purple-deep: #5b21b6;
+    --purple-soft: #f1ecfe;
+    --ink: #241d2b;
+    --muted: #7a7186;
+    --faint: #c8c0d2;
+    --line: #f0eaf4;
+    --card: #ffffff;
+    --danger: #e11d48;
+    --grad: linear-gradient(135deg, #f472b6 0%, #a855f7 55%, #7c3aed 100%);
+    --shadow: 0 1px 2px rgba(36, 29, 43, .04), 0 12px 28px -16px rgba(124, 58, 237, .28);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    min-height: 100%;
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    background:
+      radial-gradient(120% 60% at 50% -10%, #fde7f3 0%, rgba(253, 231, 243, 0) 60%),
+      linear-gradient(180deg, #fffdfe 0%, #fbf7fd 100%);
+    background-attachment: fixed;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+
+  .app {
+    max-width: 460px;
+    margin: 0 auto;
+    padding: 0 14px calc(116px + env(safe-area-inset-bottom));
+  }
+
+  /* ---------- ヘッダー ---------- */
+  .brand {
+    display: flex; align-items: center; gap: 8px;
+    padding: calc(14px + env(safe-area-inset-top)) 2px 6px;
+    font-size: 12px; font-weight: 700; letter-spacing: .14em;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .brand .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--grad); }
+
+  .monthbar {
+    display: flex; align-items: center; gap: 6px;
+    margin: 6px 0 16px;
+  }
+  .monthbar .nav {
+    width: 46px; height: 46px; flex: 0 0 auto; padding: 0;
+    border: none; border-radius: 16px; background: rgba(255, 255, 255, .82);
+    box-shadow: var(--shadow); color: var(--purple);
+    font-size: 22px; line-height: 1; font-weight: 700;
+  }
+  .monthbar .mid { flex: 1 1 auto; text-align: center; min-width: 0; }
+  .monthbar .ym {
+    font-size: 21px; font-weight: 800; letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .monthbar .back {
+    border: none; background: none; padding: 2px 6px 0;
+    font-size: 12px; font-weight: 600; color: var(--purple); opacity: .85;
+  }
+  .monthbar .back[hidden] { display: none; }
+
+  /* ---------- カード ---------- */
+  .card {
+    background: var(--card);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .card > h2 {
+    font-size: 13px; font-weight: 700; letter-spacing: .06em;
+    color: var(--muted); margin: 0 0 14px;
+  }
+
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:active { transform: scale(.98); }
+
+  /* ---------- ヒーロー ---------- */
+  .hero-txt .cap { font-size: 12px; font-weight: 700; color: var(--muted); letter-spacing: .1em; }
+  .hero-txt .big {
+    font-size: 40px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15;
+    font-variant-numeric: tabular-nums;
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-txt .big small { font-size: 16px; font-weight: 700; margin-left: 2px; }
+  .hero-txt.over .big { background: none; color: var(--danger); }
+  .hero-txt .sub { font-size: 14.5px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  .over-note {
+    margin-top: 14px; padding: 10px 13px; border-radius: 14px;
+    background: #fff1f4; color: var(--danger); font-size: 13.5px; font-weight: 700;
+  }
+
+  .chips { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    background: var(--pink-soft); color: var(--pink-ink);
+    border-radius: 99px; padding: 4px 12px; font-size: 13px; font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+  .chip.none { background: #f4f1f6; color: var(--muted); font-weight: 500; }
+
+  details.fold { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+  details.fold > summary {
+    list-style: none; cursor: pointer; font-size: 13px; font-weight: 700; color: var(--purple);
+  }
+  details.fold > summary::-webkit-details-marker { display: none; }
+  details.fold > summary::after { content: " ＋"; }
+  details.fold[open] > summary::after { content: " －"; }
+  dl.rows { margin: 10px 0 0; font-size: 14px; }
+  dl.rows > div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 0; }
+  dl.rows > div + div { border-top: 1px solid var(--line); }
+  dl.rows dt { color: var(--muted); margin: 0; }
+  dl.rows dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  dl.rows dd.hl { color: var(--purple); }
+
+  /* ---------- カレンダー ---------- */
+  .cal-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+  .cal-head h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+  .cal-head .hint { font-size: 11.5px; color: var(--faint); }
+
+  .cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; user-select: none; -webkit-user-select: none; }
+  .cal .dow { text-align: center; font-size: 11px; font-weight: 700; color: var(--faint); padding-bottom: 6px; }
+  .cal .dow.sun { color: #f472b6; }
+  .cal .dow.sat { color: #7dabf8; }
+
+  .cal .cell {
+    position: relative; aspect-ratio: 1 / 1; padding: 0; border: none; background: none;
+    border-radius: 15px; display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; color: var(--ink);
+  }
+  .cal .cell.empty { visibility: hidden; }
+  .cal .cell.base { background: var(--pink-soft); color: var(--pink-ink); font-weight: 700; }
+  .cal .cell .n { position: relative; z-index: 2; }
+  .cal .cell.visited::before {
+    content: ""; position: absolute; inset: 11%; border-radius: 99px;
+    background: linear-gradient(135deg, #a855f7, #6d28d9);
+    box-shadow: 0 3px 8px -2px rgba(91, 33, 182, .55);
+  }
+  .cal .cell.visited { color: #fff; font-weight: 800; }
+  .cal .cell.today::after {
+    content: ""; position: absolute; inset: 0; border-radius: 15px;
+    box-shadow: inset 0 0 0 2px var(--ink); z-index: 3;
+  }
+  .cal .cell.future { color: var(--faint); font-weight: 400; }
+  .cal .cell.future.base { color: #e3b3cb; }
+
+  .legend { display: flex; gap: 16px; margin-top: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .legend span { display: flex; align-items: center; gap: 7px; }
+  .sw { width: 17px; height: 17px; display: inline-block; flex: 0 0 auto; }
+  .sw.pink { border-radius: 6px; background: var(--pink-soft); }
+  .sw.purple { border-radius: 99px; background: linear-gradient(135deg, #a855f7, #6d28d9); }
+
+  /* ---------- 入力行（設定内で使用） ---------- */
+  .rec { display: flex; gap: 8px; }
+  input[type=date], input[type=month], input[type=number],
+  input[type=password], input[type=text] {
+    font: inherit; background: #fbf9fc; border: 1px solid var(--line);
+    border-radius: 14px; padding: 11px 12px; color: var(--ink); min-width: 0;
+  }
+  .rec input { flex: 1 1 auto; }
+  .rec button {
+    flex: 0 0 auto; border: none; border-radius: 14px; padding: 13px 20px;
+    background: var(--purple-soft); color: var(--purple-deep); font-weight: 700;
+  }
+
+  /* ---------- 設定 ---------- */
+  details.set > summary {
+    list-style: none; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--muted);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  details.set > summary::-webkit-details-marker { display: none; }
+  details.set > summary::after { content: "＋"; color: var(--purple); font-size: 16px; }
+  details.set[open] > summary::after { content: "－"; }
+  .set h3 {
+    font-size: 12px; font-weight: 700; letter-spacing: .07em; color: var(--muted);
+    margin: 22px 0 10px;
+  }
+  .wd-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .wd-grid label {
+    display: flex; align-items: center; justify-content: center;
+    aspect-ratio: 1 / 1; border-radius: 14px; background: #fbf9fc;
+    font-size: 14px; font-weight: 600; color: var(--muted);
+  }
+  .wd-grid input { position: absolute; opacity: 0; pointer-events: none; }
+  .wd-grid label:has(input:checked) {
+    background: var(--pink-soft); color: var(--pink-ink); font-weight: 800;
+    box-shadow: inset 0 0 0 2px var(--pink);
+  }
+  .field {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 0; font-size: 14.5px;
+  }
+  .field + .field { border-top: 1px solid var(--line); }
+  .field input[type=number], .field input[type=month] { width: 8.5em; text-align: right; }
+  .switch { position: relative; width: 50px; height: 30px; flex: 0 0 auto; }
+  .switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; }
+  .switch .track {
+    position: absolute; inset: 0; border-radius: 99px; background: #e6e0ec; transition: background .18s;
+  }
+  .switch .track::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px;
+    border-radius: 99px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: transform .18s;
+  }
+  .switch input:checked + .track { background: var(--purple); }
+  .switch input:checked + .track::after { transform: translateX(20px); }
+
+  .note { font-size: 12.5px; color: var(--faint); line-height: 1.6; margin: 10px 0 0; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-row button {
+    flex: 1 1 44%; border: none; border-radius: 14px; padding: 12px 8px;
+    background: #fbf9fc; box-shadow: inset 0 0 0 1px var(--line);
+    font-size: 13.5px; font-weight: 700; color: var(--ink);
+  }
+  textarea.dump {
+    width: 100%; height: 120px; margin-top: 10px; padding: 10px; font-size: 11px;
+    font-family: ui-monospace, monospace; border: 1px solid var(--line); border-radius: 14px;
+    background: #fbf9fc; color: var(--muted);
+  }
+
+  /* ---------- FAB ---------- */
+  .fab-wrap {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+    max-width: 460px; margin: 0 auto;
+    padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, #fbf7fd 46%, rgba(251, 247, 253, 0));
+    pointer-events: none;
+  }
+  .fab {
+    pointer-events: auto;
+    width: 100%; border: none; border-radius: 20px; padding: 19px 16px;
+    background: var(--grad); color: #fff; font-size: 18px; font-weight: 800; letter-spacing: .02em;
+    box-shadow: 0 10px 26px -8px rgba(124, 58, 237, .55);
+  }
+  .fab[disabled] {
+    background: #fff; color: var(--purple); box-shadow: var(--shadow);
+    transform: none; cursor: default;
+  }
+
+  .toast {
+    position: fixed; left: 50%; transform: translateX(-50%);
+    bottom: calc(100px + env(safe-area-inset-bottom)); z-index: 30;
+    display: flex; align-items: center; gap: 4px;
+    background: rgba(36, 29, 43, .95); color: #fff; font-size: 13.5px; font-weight: 600;
+    padding: 8px 8px 8px 18px; border-radius: 99px; max-width: 92%;
+    box-shadow: 0 10px 26px -10px rgba(36, 29, 43, .6);
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+  .toast.act { pointer-events: auto; }
+  .toast .msg { padding: 3px 0; }
+  .toast .undo {
+    flex: 0 0 auto; border: none; border-radius: 99px; padding: 8px 15px;
+    background: rgba(255, 255, 255, .16); color: #fbcfe8; font-size: 13px; font-weight: 800;
+  }
+
+  /* ---------- パスコードロック画面 ---------- */
+  html.locked .app, html.locked .fab-wrap { display: none; }
+  .gate {
+    position: fixed; inset: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px calc(24px + env(safe-area-inset-left)) 24px;
+    background:
+      radial-gradient(120% 60% at 50% 0%, #fde7f3 0%, rgba(253, 231, 243, 0) 62%),
+      linear-gradient(180deg, #fffdfe 0%, #fbf7fd 100%);
+  }
+  .gate[hidden] { display: none; }
+  .gate-box {
+    width: 100%; max-width: 340px; text-align: center;
+    background: #fff; border-radius: 26px; padding: 30px 22px 24px; box-shadow: var(--shadow);
+  }
+  .gate-box img { width: 62px; height: 62px; border-radius: 18px; }
+  .gate-box h1 { font-size: 19px; font-weight: 800; margin: 14px 0 4px; }
+  .gate-box p { font-size: 13px; color: var(--muted); margin: 0 0 20px; }
+  .gate-box input {
+    width: 100%; text-align: center; font-size: 22px; font-weight: 700; letter-spacing: .3em;
+    padding: 15px 12px; border-radius: 16px; border: 1px solid var(--line); background: #fbf9fc;
+  }
+  .gate-box input::placeholder { letter-spacing: normal; font-size: 15px; font-weight: 500; color: var(--faint); }
+  .gate-box .go {
+    width: 100%; margin-top: 12px; border: none; border-radius: 16px; padding: 16px;
+    background: var(--grad); color: #fff; font-size: 17px; font-weight: 800;
+    box-shadow: 0 8px 22px -8px rgba(124, 58, 237, .5);
+  }
+  .gate-err { min-height: 20px; margin-top: 12px; font-size: 13px; font-weight: 700; color: var(--danger); }
+  .gate-box.shake { animation: shake .32s; }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-9px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(4px); }
+  }
+  .lock-out {
+    width: 100%; height: 84px; margin-top: 10px; padding: 10px; font-size: 11px;
+    font-family: ui-monospace, monospace; border: 1px solid var(--line); border-radius: 14px;
+    background: #fbf9fc; color: var(--ink); word-break: break-all;
+  }
+
+  @media (min-width: 480px) {
+    .app { padding-left: 20px; padding-right: 20px; }
+    .fab-wrap { padding-left: 20px; padding-right: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="brand"><i class="dot"></i>Fitness Log</div>
+
+  <div class="monthbar">
+    <button class="nav" id="btn-prev" aria-label="前の月">‹</button>
+    <div class="mid">
+      <div class="ym" id="month-label"></div>
+      <button class="back" id="btn-this-month" hidden>今月へ戻る</button>
+    </div>
+    <button class="nav" id="btn-next" aria-label="次の月">›</button>
+  </div>
+
+  <section class="card">
+    <div class="hero-txt" id="hero-txt">
+      <div class="cap" id="hero-cap">のこり</div>
+      <div class="big"><span id="hero-num">0</span><small id="hero-unit">回</small></div>
+      <div class="sub" id="hero-sub"></div>
+    </div>
+
+    <div class="over-note" id="over-note" hidden></div>
+
+    <div class="chips" id="wd-chips"></div>
+
+    <details class="fold">
+      <summary>内訳を見る</summary>
+      <dl class="rows">
+        <div><dt>今月の基本回数</dt><dd id="r-base">0回</dd></div>
+        <div id="row-carryin"><dt>前月からの繰り越し</dt><dd id="r-carryin">0回</dd></div>
+        <div><dt>今月の利用可能回数</dt><dd id="r-avail" class="hl">0回</dd></div>
+        <div id="row-carryout"><dt>翌月への繰り越し（見込み）</dt><dd id="r-carryout">0回</dd></div>
+      </dl>
+    </details>
+  </section>
+
+  <section class="card">
+    <div class="cal-head">
+      <h2>カレンダー</h2>
+      <span class="hint">日付をタップで記録／取消</span>
+    </div>
+    <div class="cal" id="cal"></div>
+    <div class="legend">
+      <span><i class="sw pink"></i>基準曜日</span>
+      <span><i class="sw purple"></i>利用した日</span>
+    </div>
+  </section>
+
+  <section class="card">
+    <details class="set" id="settings">
+      <summary>設定とバックアップ</summary>
+
+      <h3>基準曜日</h3>
+      <div class="wd-grid" id="wd-grid"></div>
+      <p class="note">選んだ曜日がその月に何回あるかを合計して基本回数になります。設定は自動保存され、毎月選び直す必要はありません。</p>
+
+      <h3>繰り越し</h3>
+      <div class="field">
+        <label for="c-enabled">繰り越しを有効にする</label>
+        <span class="switch"><input type="checkbox" id="c-enabled"><span class="track"></span></span>
+      </div>
+      <div class="field">
+        <label for="c-months">有効期間（か月先まで）</label>
+        <input type="number" id="c-months" min="0" max="24" step="1" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="c-max">繰り越せる最大回数</label>
+        <input type="number" id="c-max" min="0" max="999" step="1" inputmode="numeric" placeholder="上限なし">
+      </div>
+      <p class="note">最大回数を空欄にすると上限なし。有効期間 1 は「翌月まで有効」の意味です。残りがマイナスの月でも、翌月への繰り越しは 0 回として扱います。</p>
+
+      <h3>バックアップ</h3>
+      <div class="btn-row">
+        <button id="btn-export">JSON書き出し</button>
+        <button id="btn-export-csv">CSV書き出し</button>
+        <button id="btn-import">JSON読み込み</button>
+        <button id="btn-show-json">表示してコピー</button>
+      </div>
+      <input type="file" id="file-input" accept=".json,application/json" hidden>
+      <textarea class="dump" id="dump" hidden readonly></textarea>
+      <p class="note">データはこの端末のブラウザ内だけに保存され、外部へ送信されません。端末の買い替えや Safari のデータ削除に備えて、ときどき書き出して保存してください。</p>
+
+      <h3>パスコードロック</h3>
+      <p class="note" style="margin-top:0">
+        設定すると、URL を知っている人でもパスコードなしでは中を開けなくなります。
+        下でパスコードを入力して「生成」を押し、表示された 1 行を
+        <code>index.html</code> の先頭付近にある <code>window.APP_LOCK = null;</code> の行と
+        入れ替えて、GitHub に再アップロードしてください。
+      </p>
+      <div class="rec">
+        <input type="password" id="lock-new" inputmode="numeric" autocomplete="new-password"
+               placeholder="設定したいパスコード" aria-label="設定したいパスコード">
+        <button id="lock-gen">生成</button>
+      </div>
+      <textarea class="lock-out" id="lock-out" hidden readonly></textarea>
+      <p class="note">
+        パスコードそのものは、この端末の外へ一切送信されません（変換はブラウザ内で行われます）。
+        変換後の文字列からパスコードを復元することはできませんが、
+        <strong>忘れると自分も開けなくなる</strong>ため、必ず覚えられるものにしてください。
+        万一忘れた場合は <code>window.APP_LOCK = null;</code> に戻して再アップロードすれば解除できます。
+      </p>
+      <div class="btn-row">
+        <button id="lock-relock">この端末を再ロックする</button>
+      </div>
+      <p class="note">
+        一度パスコードを入力した端末は、次回から入力を省略します。
+        他人に一時的に貸すときなどは「再ロック」を押してください。
+      </p>
+
+      <h3>計算の開始月</h3>
+      <div class="field">
+        <label for="start-month">繰り越し計算の開始月</label>
+        <input type="month" id="start-month">
+      </div>
+      <p class="note">通常は変更不要です（初回起動月が入ります）。</p>
+    </details>
+  </section>
+</div>
+
+<div class="fab-wrap"><button class="fab" id="fab">今日行った</button></div>
+<div class="toast" id="toast"></div>
+
+<div class="gate" id="gate" hidden>
+  <div class="gate-box" id="gate-box">
+    <img src="icons/icon-192.png" alt="">
+    <h1>パスコードを入力</h1>
+    <p>このアプリはロックされています</p>
+    <input type="password" id="gate-input" inputmode="numeric" autocomplete="off"
+           enterkeyhint="go" placeholder="パスコード" aria-label="パスコード">
+    <button class="go" id="gate-go">解除する</button>
+    <div class="gate-err" id="gate-err"></div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const KEY = "kravmaga_v1";
+  const WD_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
+  const MAX_WALK = 600;
+
+  /* ---------- 日付ユーティリティ ---------- */
+  const pad = n => String(n).padStart(2, "0");
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const ym = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}`;
+  const firstOfMonth = d => new Date(d.getFullYear(), d.getMonth(), 1);
+  const idxOf = d => d.getFullYear() * 12 + d.getMonth();
+  const idxOfYm = s => {
+    const [y, m] = s.split("-").map(Number);
+    return y * 12 + (m - 1);
+  };
+  const ymOfIdx = i => `${Math.floor(i / 12)}-${pad((i % 12) + 1)}`;
+  const daysInMonth = (y, m) => new Date(y, m + 1, 0).getDate();
+
+  function countWeekday(y, m, wd) {
+    const dim = daysInMonth(y, m);
+    const offset = (wd - new Date(y, m, 1).getDay() + 7) % 7;
+    return offset >= dim ? 0 : Math.floor((dim - 1 - offset) / 7) + 1;
+  }
+
+  const defaultState = () => ({
+    version: 1,
+    baseWeekdays: [0, 2],
+    carry: { enabled: true, months: 1, max: null },
+    visits: [],
+    startMonth: ym(new Date())
+  });
+
+  let state = load();
+  let view = firstOfMonth(new Date());
+
+  /* ---------- 保存 / 読み込み ---------- */
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) return normalize(JSON.parse(raw));
+    } catch (e) { /* 壊れたデータは初期値で置き換える */ }
+    const s = defaultState();
+    persist(s);
+    return s;
+  }
+
+  function normalize(o) {
+    const d = defaultState();
+    return {
+      version: 1,
+      baseWeekdays: Array.isArray(o.baseWeekdays)
+        ? [...new Set(o.baseWeekdays.map(Number).filter(n => n >= 0 && n <= 6))].sort((a, b) => a - b)
+        : d.baseWeekdays,
+      carry: {
+        enabled: o.carry ? o.carry.enabled !== false : true,
+        months: o.carry && Number.isFinite(Number(o.carry.months)) ? Math.max(0, Math.floor(o.carry.months)) : 1,
+        max: o.carry && o.carry.max !== null && o.carry.max !== undefined && Number.isFinite(Number(o.carry.max))
+          ? Math.max(0, Math.floor(o.carry.max)) : null
+      },
+      visits: Array.isArray(o.visits)
+        ? [...new Set(o.visits.filter(v => /^\d{4}-\d{2}-\d{2}$/.test(v)))].sort()
+        : [],
+      startMonth: /^\d{4}-\d{2}$/.test(o.startMonth) ? o.startMonth : d.startMonth
+    };
+  }
+
+  function persist(s) {
+    try { localStorage.setItem(KEY, JSON.stringify(s || state)); }
+    catch (e) { toast("保存に失敗しました"); }
+  }
+
+  const save = () => { persist(state); render(); };
+
+  /* ---------- 集計 ---------- */
+  function visitCountAt(idx) {
+    const key = ymOfIdx(idx);
+    return state.visits.filter(v => v.slice(0, 7) === key).length;
+  }
+
+  // 表示中の月について、繰り越しを含めた集計を返す。
+  // 開始月から順に走らせるので、過去月の実績を直したら以降も自動で再計算される。
+  function summary(target) {
+    const targetIdx = idxOf(target);
+    const visitIdxs = state.visits.map(v => idxOfYm(v.slice(0, 7)));
+    let startIdx = Math.min(idxOfYm(state.startMonth), targetIdx, ...(visitIdxs.length ? visitIdxs : [targetIdx]));
+    startIdx = Math.max(startIdx, targetIdx - MAX_WALK);
+
+    const validMonths = state.carry.enabled ? state.carry.months : 0;
+    let buckets = [];
+    let out = null;
+
+    for (let idx = startIdx; idx <= targetIdx; idx++) {
+      const y = Math.floor(idx / 12), m = idx % 12;
+      const perWd = state.baseWeekdays.map(wd => ({ wd, n: countWeekday(y, m, wd) }));
+      const base = perWd.reduce((a, b) => a + b.n, 0);
+
+      buckets = buckets.filter(b => b.remaining > 0 && b.origin + validMonths >= idx);
+      const carryIn = buckets.reduce((a, b) => a + b.remaining, 0);
+      buckets.push({ origin: idx, remaining: base });
+      buckets.sort((a, b) => a.origin - b.origin);
+
+      const available = carryIn + base;
+      const used = visitCountAt(idx);
+
+      // 期限が近いぶんから先に消費する
+      let need = used;
+      for (const b of buckets) {
+        const take = Math.min(b.remaining, need);
+        b.remaining -= take;
+        need -= take;
+      }
+
+      let next = [];
+      if (state.carry.enabled) {
+        next = buckets
+          .filter(b => b.remaining > 0 && b.origin + validMonths >= idx + 1)
+          .map(b => ({ origin: b.origin, remaining: b.remaining }));
+        if (state.carry.max !== null) {
+          let cap = state.carry.max;
+          next.sort((a, b) => b.origin - a.origin); // 期限の長いぶんを優先して残す
+          const kept = [];
+          for (const b of next) {
+            if (cap <= 0) break;
+            const amt = Math.min(b.remaining, cap);
+            kept.push({ origin: b.origin, remaining: amt });
+            cap -= amt;
+          }
+          next = kept;
+        }
+      }
+      const carryOut = next.reduce((a, b) => a + b.remaining, 0);
+
+      if (idx === targetIdx) {
+        out = { perWd, base, carryIn, available, used, remaining: available - used, carryOut };
+      }
+      buckets = next;
+    }
+    return out;
+  }
+
+  /* ---------- 記録の追加 / 削除 ---------- */
+  function pushVisit(dateStr) {
+    state.visits.push(dateStr);
+    state.visits.sort();
+    save();
+  }
+
+  function dropVisit(dateStr) {
+    const i = state.visits.indexOf(dateStr);
+    if (i < 0) return false;
+    state.visits.splice(i, 1);
+    save();
+    return true;
+  }
+
+  // 記録も取り消しも確認ダイアログなしで即実行し、
+  // トーストの「元に戻す」で戻せるようにする（片手で操作しやすくするため）。
+  function addVisit(dateStr) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return toast("日付を選んでください");
+    if (dateStr > iso(new Date())) return toast("未来の日付は記録できません");
+    if (state.visits.includes(dateStr)) return toast(`${fmt(dateStr)} は既に記録済みです`);
+    pushVisit(dateStr);
+    toast(`${fmt(dateStr)} を記録`, () => {
+      dropVisit(dateStr);
+      toast(`${fmt(dateStr)} を取り消しました`);
+    });
+  }
+
+  function removeVisit(dateStr) {
+    if (!dropVisit(dateStr)) return;
+    toast(`${fmt(dateStr)} を取り消し`, () => {
+      pushVisit(dateStr);
+      toast(`${fmt(dateStr)} を記録しました`);
+    });
+  }
+
+  const fmt = s => {
+    const [y, m, d] = s.split("-").map(Number);
+    return `${m}月${d}日(${WD_NAMES[new Date(y, m - 1, d).getDay()]})`;
+  };
+
+  /* ---------- 描画 ---------- */
+  const $ = id => document.getElementById(id);
+
+  function render() {
+    const y = view.getFullYear(), m = view.getMonth();
+    const s = summary(view);
+    const todayIso = iso(new Date());
+    const over = s.remaining < 0;
+
+    $("month-label").textContent = `${y}年${m + 1}月`;
+    $("btn-this-month").hidden = idxOf(view) === idxOf(new Date());
+
+    // 大きい数字（残り / 超過）
+    $("hero-txt").classList.toggle("over", over);
+    $("hero-cap").textContent = over ? "オーバー" : "のこり";
+    $("hero-num").textContent = over ? -s.remaining : s.remaining;
+    $("hero-sub").textContent = `${s.used} / ${s.available} 回利用済み`;
+
+    const note = $("over-note");
+    note.hidden = !over;
+    if (over) note.textContent = `利用可能回数を ${-s.remaining}回 超えています`;
+
+    $("wd-chips").innerHTML = s.perWd.length
+      ? s.perWd.map(p => `<span class="chip">${WD_NAMES[p.wd]}曜日 ${p.n}回</span>`).join("")
+      : `<span class="chip none">基準曜日が未設定です</span>`;
+
+    $("r-base").textContent = `${s.base}回`;
+    $("r-carryin").textContent = `${s.carryIn}回`;
+    $("r-avail").textContent = `${s.available}回`;
+    $("r-carryout").textContent = `${s.carryOut}回`;
+    $("row-carryin").hidden = !state.carry.enabled;
+    $("row-carryout").hidden = !state.carry.enabled;
+
+    renderCalendar(y, m, todayIso);
+
+    const done = state.visits.includes(todayIso);
+    const fab = $("fab");
+    fab.disabled = done;
+    fab.textContent = done ? "今日は記録済み ✓" : "今日行った";
+  }
+
+  function renderCalendar(y, m, todayIso) {
+    const baseSet = new Set(state.baseWeekdays);
+    const parts = WD_NAMES.map((n, i) =>
+      `<div class="dow${i === 0 ? " sun" : i === 6 ? " sat" : ""}">${n}</div>`);
+    const lead = new Date(y, m, 1).getDay();
+    for (let i = 0; i < lead; i++) parts.push('<div class="cell empty"></div>');
+    const dim = daysInMonth(y, m);
+    for (let d = 1; d <= dim; d++) {
+      const ds = `${y}-${pad(m + 1)}-${pad(d)}`;
+      const wd = new Date(y, m, d).getDay();
+      const cls = ["cell"];
+      if (baseSet.has(wd)) cls.push("base");
+      if (state.visits.includes(ds)) cls.push("visited");
+      if (ds === todayIso) cls.push("today");
+      if (ds > todayIso) cls.push("future");
+      parts.push(`<button class="${cls.join(" ")}" data-date="${ds}"><span class="n">${d}</span></button>`);
+    }
+    $("cal").innerHTML = parts.join("");
+  }
+
+  function renderSettings() {
+    $("wd-grid").innerHTML = WD_NAMES.map((n, i) =>
+      `<label><input type="checkbox" data-wd="${i}"${state.baseWeekdays.includes(i) ? " checked" : ""}>${n}</label>`
+    ).join("");
+    $("c-enabled").checked = state.carry.enabled;
+    $("c-months").value = state.carry.months;
+    $("c-max").value = state.carry.max === null ? "" : state.carry.max;
+    $("start-month").value = state.startMonth;
+  }
+
+  let toastTimer;
+  function toast(msg, undo) {
+    const t = $("toast");
+    t.innerHTML = "";
+    const span = document.createElement("span");
+    span.className = "msg";
+    span.textContent = msg;
+    t.append(span);
+    t.classList.toggle("act", !!undo);
+    if (undo) {
+      const b = document.createElement("button");
+      b.className = "undo";
+      b.textContent = "元に戻す";
+      b.onclick = () => {
+        clearTimeout(toastTimer);
+        t.classList.remove("show", "act");
+        undo();
+      };
+      t.append(b);
+    }
+    t.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove("show", "act"), undo ? 5000 : 2200);
+  }
+
+  /* ---------- バックアップ ---------- */
+  function download(name, text, type) {
+    try {
+      const url = URL.createObjectURL(new Blob([text], { type: type + ";charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      toast("書き出しました");
+    } catch (e) {
+      toast("書き出せませんでした。表示してコピーしてください");
+    }
+  }
+
+  const stamp = () => iso(new Date()).replace(/-/g, "");
+
+  /* ---------- イベント ---------- */
+  $("btn-prev").onclick = () => { view = new Date(view.getFullYear(), view.getMonth() - 1, 1); render(); };
+  $("btn-next").onclick = () => { view = new Date(view.getFullYear(), view.getMonth() + 1, 1); render(); };
+  $("btn-this-month").onclick = () => { view = firstOfMonth(new Date()); render(); };
+
+  $("fab").onclick = () => addVisit(iso(new Date()));
+
+  $("cal").addEventListener("click", e => {
+    const btn = e.target.closest("button[data-date]");
+    if (!btn) return;
+    const ds = btn.dataset.date;
+    if (state.visits.includes(ds)) removeVisit(ds);
+    else addVisit(ds);
+  });
+
+  $("wd-grid").addEventListener("change", e => {
+    const cb = e.target.closest("input[data-wd]");
+    if (!cb) return;
+    const set = new Set(state.baseWeekdays);
+    cb.checked ? set.add(Number(cb.dataset.wd)) : set.delete(Number(cb.dataset.wd));
+    state.baseWeekdays = [...set].sort((a, b) => a - b);
+    save();
+  });
+
+  $("c-enabled").onchange = e => { state.carry.enabled = e.target.checked; save(); };
+  $("c-months").onchange = e => {
+    const n = Number(e.target.value);
+    state.carry.months = Number.isFinite(n) && n >= 0 ? Math.floor(n) : 1;
+    e.target.value = state.carry.months;
+    save();
+  };
+  $("c-max").onchange = e => {
+    const raw = e.target.value.trim();
+    const n = Number(raw);
+    state.carry.max = raw === "" || !Number.isFinite(n) || n < 0 ? null : Math.floor(n);
+    e.target.value = state.carry.max === null ? "" : state.carry.max;
+    save();
+  };
+  $("start-month").onchange = e => {
+    if (/^\d{4}-\d{2}$/.test(e.target.value)) { state.startMonth = e.target.value; save(); }
+    else e.target.value = state.startMonth;
+  };
+
+  $("btn-export").onclick = () =>
+    download(`fitness-backup-${stamp()}.json`, JSON.stringify(state, null, 2), "application/json");
+
+  $("btn-export-csv").onclick = () => {
+    const rows = ["date,weekday", ...state.visits.map(v => {
+      const [y, m, d] = v.split("-").map(Number);
+      return `${v},${WD_NAMES[new Date(y, m - 1, d).getDay()]}`;
+    })];
+    download(`fitness-visits-${stamp()}.csv`, "﻿" + rows.join("\r\n"), "text/csv");
+  };
+
+  $("btn-show-json").onclick = () => {
+    const ta = $("dump");
+    ta.hidden = false;
+    ta.value = JSON.stringify(state);
+    ta.select();
+    navigator.clipboard?.writeText(ta.value)
+      .then(() => toast("コピーしました"))
+      .catch(() => toast("表示しました。長押しでコピーしてください"));
+  };
+
+  $("btn-import").onclick = () => $("file-input").click();
+  $("file-input").onchange = e => {
+    const file = e.target.files && e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => {
+      let parsed;
+      try { parsed = JSON.parse(String(r.result)); }
+      catch (err) { return toast("JSONとして読めませんでした"); }
+      if (!confirm("現在のデータを読み込んだ内容で置き換えます。よろしいですか？")) return;
+      state = normalize(parsed);
+      save();
+      renderSettings();
+      toast("読み込みました");
+    };
+    r.onerror = () => toast("ファイルを読めませんでした");
+    r.readAsText(file);
+  };
+
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+
+  /* ---------- パスコードロック ---------- */
+  const LOCK = typeof window.APP_LOCK === "string" && window.APP_LOCK.length ? window.APP_LOCK : null;
+  const UNLOCK_KEY = "kravmaga_unlock";
+
+  // パスコードは保存せず、PBKDF2 で変換した文字列だけを比較に使う。
+  async function derive(pass) {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey("raw", enc.encode(pass), "PBKDF2", false, ["deriveBits"]);
+    const bits = await crypto.subtle.deriveBits(
+      { name: "PBKDF2", salt: enc.encode("fitness-log-lock-v1"), iterations: 250000, hash: "SHA-256" },
+      key, 256);
+    return [...new Uint8Array(bits)].map(b => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  const cryptoReady = () => !!(window.crypto && crypto.subtle && crypto.subtle.deriveBits);
+
+  $("lock-gen").onclick = async () => {
+    const pass = $("lock-new").value;
+    if (pass.length < 4) return toast("4文字以上にしてください");
+    if (!cryptoReady()) return toast("https でアクセスしてから実行してください");
+    $("lock-gen").disabled = true;
+    try {
+      const line = `  window.APP_LOCK = "${await derive(pass)}";`;
+      const ta = $("lock-out");
+      ta.hidden = false;
+      ta.value = line;
+      ta.select();
+      $("lock-new").value = "";
+      navigator.clipboard?.writeText(line)
+        .then(() => toast("コピーしました。index.html に貼り付けてください"))
+        .catch(() => toast("表示しました。長押しでコピーしてください"));
+    } catch (e) {
+      toast("生成に失敗しました");
+    } finally {
+      $("lock-gen").disabled = false;
+    }
+  };
+
+  $("lock-relock").onclick = () => {
+    localStorage.removeItem(UNLOCK_KEY);
+    toast(LOCK ? "再ロックしました。次回起動時に入力を求めます" : "パスコードは未設定です");
+  };
+
+  function boot() {
+    document.documentElement.classList.remove("locked");
+    $("gate").hidden = true;
+    renderSettings();
+    render();
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("sw.js").catch(() => {});
+    }
+  }
+
+  function showGate() {
+    document.documentElement.classList.add("locked");
+    const gate = $("gate"), box = $("gate-box"), input = $("gate-input"), err = $("gate-err");
+    gate.hidden = false;
+    setTimeout(() => input.focus(), 60);
+
+    if (!cryptoReady()) {
+      err.textContent = "https でアクセスしてください";
+      $("gate-go").disabled = true;
+      return;
+    }
+
+    const tryUnlock = async () => {
+      const pass = input.value;
+      if (!pass) return;
+      $("gate-go").disabled = true;
+      err.textContent = "確認中…";
+      try {
+        if (await derive(pass) === LOCK) {
+          try { localStorage.setItem(UNLOCK_KEY, LOCK); } catch (e) { /* 保存できなくても解除は行う */ }
+          boot();
+          return;
+        }
+        err.textContent = "パスコードが違います";
+      } catch (e) {
+        err.textContent = "確認できませんでした";
+      }
+      input.value = "";
+      box.classList.remove("shake");
+      void box.offsetWidth;
+      box.classList.add("shake");
+      $("gate-go").disabled = false;
+      input.focus();
+    };
+
+    $("gate-go").onclick = tryUnlock;
+    input.addEventListener("keydown", e => { if (e.key === "Enter") tryUnlock(); });
+  }
+
+  if (!LOCK || localStorage.getItem(UNLOCK_KEY) === LOCK) boot();
+  else showGate();
+})();
+</script>
+</body>
+</html>
