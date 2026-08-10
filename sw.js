@@ -1,6 +1,6 @@
 // オフラインでも起動できるようにするための最小構成のService Worker。
 // ファイルを更新したときは CACHE の値を変えると、新しい内容が反映されます。
-const CACHE = "fitness-v4";
+const CACHE = "fitness-v5";
 const ASSETS = [
   "./",
   "./index.html",

@@ -181,17 +181,85 @@
   }
   .cal .cell.future { color: var(--faint); font-weight: 400; }
   .cal .cell.future.base { color: #e3b3cb; }
+  .cal .cell.closed {
+    background: repeating-linear-gradient(45deg, #f3f0f6 0 4px, #fdfcfe 4px 8px);
+    color: var(--faint); font-weight: 400;
+  }
+  .cal .dow.mon { color: #b8b1c2; }
 
-  .legend { display: flex; gap: 16px; margin-top: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px; margin-top: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
   .legend span { display: flex; align-items: center; gap: 7px; }
   .sw { width: 17px; height: 17px; display: inline-block; flex: 0 0 auto; }
   .sw.pink { border-radius: 6px; background: var(--pink-soft); }
   .sw.purple { border-radius: 99px; background: linear-gradient(135deg, #a855f7, #6d28d9); }
+  .sw.closed {
+    border-radius: 6px; box-shadow: inset 0 0 0 1px var(--line);
+    background: repeating-linear-gradient(45deg, #f3f0f6 0 3px, #fdfcfe 3px 6px);
+  }
+
+  /* ---------- レベル ---------- */
+  .lv-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .lv-badge {
+    font-size: 14.5px; font-weight: 800; padding: 6px 15px; border-radius: 99px;
+    box-shadow: inset 0 0 0 1px rgba(36, 29, 43, .1);
+  }
+  .lv-count { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--muted); }
+  .bar { height: 10px; border-radius: 99px; background: #f1edf5; margin: 15px 0 11px; overflow: hidden; }
+  .bar i { display: block; height: 100%; border-radius: 99px; background: var(--grad); transition: width .3s; }
+  .bar.done i { background: linear-gradient(135deg, #34d399, #059669); }
+  .lv-note { font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+  .lv-note.ok { color: #047857; font-weight: 700; }
+  .lv-up {
+    width: 100%; margin-top: 15px; border: none; border-radius: 16px; padding: 15px;
+    background: linear-gradient(135deg, #34d399, #059669); color: #fff;
+    font-size: 15px; font-weight: 800;
+    box-shadow: 0 8px 20px -8px rgba(5, 150, 105, .5);
+  }
+  .lv-up[hidden] { display: none; }
+
+  /* ---------- タイムテーブル ---------- */
+  .tt-mine { display: grid; gap: 7px; }
+  .tt-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .tt-row .wd {
+    width: 27px; height: 27px; flex: 0 0 auto; border-radius: 9px; font-style: normal;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; background: #f4f1f6; color: var(--muted);
+  }
+  .tt-row .wd.sun { background: #ffe4ef; color: #be185d; }
+  .tt-row .wd.sat { background: #e3edfd; color: #1d4ed8; }
+  .tt-row .times { font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: .01em; }
+  .tt-none { font-size: 13.5px; color: var(--faint); }
+
+  .tt-scroll { overflow-x: auto; margin-top: 12px; padding-bottom: 4px; }
+  .tt-grid {
+    display: grid; grid-template-columns: 40px repeat(7, minmax(36px, 1fr));
+    gap: 3px; min-width: 313px;
+  }
+  .tt-grid > div {
+    display: flex; align-items: center; justify-content: center; text-align: center;
+    border-radius: 8px; font-size: 10.5px; font-weight: 700; line-height: 1.25; padding: 7px 2px;
+  }
+  .tt-h { background: #2b2f3a; color: #fff; font-size: 12px; }
+  .tt-h.mon { background: #8f8a99; }
+  .tt-h.sat { background: #4a6478; }
+  .tt-h.sun { background: #d92d20; }
+  .tt-t {
+    background: #efecf2; color: var(--muted); font-size: 10px;
+    font-variant-numeric: tabular-nums;
+  }
+  .tt-closed, .tt-sp { writing-mode: vertical-rl; letter-spacing: .14em; font-size: 11px; }
+  .tt-closed {
+    background: repeating-linear-gradient(45deg, #f1eef4 0 5px, #fbfafc 5px 10px);
+    color: var(--muted);
+  }
+  .tt-c.mine { box-shadow: inset 0 0 0 2px var(--purple); }
+
+  /* ---------- 設定 ---------- */
 
   /* ---------- 入力行（設定内で使用） ---------- */
   .rec { display: flex; gap: 8px; }
   input[type=date], input[type=month], input[type=number],
-  input[type=password], input[type=text] {
+  input[type=password], input[type=text], select {
     font: inherit; background: #fbf9fc; border: 1px solid var(--line);
     border-radius: 14px; padding: 11px 12px; color: var(--ink); min-width: 0;
   }
@@ -201,7 +269,6 @@
     background: var(--purple-soft); color: var(--purple-deep); font-weight: 700;
   }
 
-  /* ---------- 設定 ---------- */
   details.set > summary {
     list-style: none; cursor: pointer; font-size: 14px; font-weight: 700; color: var(--muted);
     display: flex; align-items: center; justify-content: space-between;
@@ -223,6 +290,10 @@
   .wd-grid label:has(input:checked) {
     background: var(--pink-soft); color: var(--pink-ink); font-weight: 800;
     box-shadow: inset 0 0 0 2px var(--pink);
+  }
+  .wd-grid label.off {
+    opacity: .45; text-decoration: line-through;
+    background: repeating-linear-gradient(45deg, #f1eef4 0 4px, #fbfafc 4px 8px);
   }
   .field {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -385,16 +456,61 @@
     <div class="legend">
       <span><i class="sw pink"></i>基準曜日</span>
       <span><i class="sw purple"></i>利用した日</span>
+      <span><i class="sw closed"></i>定休日</span>
     </div>
+  </section>
+
+  <section class="card">
+    <div class="lv-head">
+      <span class="lv-badge" id="lv-badge">Level 1</span>
+      <span class="lv-count" id="lv-count">0 / 30回</span>
+    </div>
+    <div class="bar" id="lv-bar-wrap"><i id="lv-bar"></i></div>
+    <div class="lv-note" id="lv-note"></div>
+    <button class="lv-up" id="lv-up" hidden></button>
+  </section>
+
+  <section class="card">
+    <div class="cal-head">
+      <h2>タイムテーブル</h2>
+      <span class="hint" id="tt-hint"></span>
+    </div>
+    <div class="tt-mine" id="tt-mine"></div>
+    <details class="fold">
+      <summary>全レベルの時間割を見る</summary>
+      <div class="tt-scroll"><div class="tt-grid" id="tt-grid"></div></div>
+      <p class="note">マスの数字は対象レベル。紫の枠が自分のレベルのクラスです。</p>
+    </details>
   </section>
 
   <section class="card">
     <details class="set" id="settings">
       <summary>設定とバックアップ</summary>
 
+      <h3>レベル</h3>
+      <div class="field">
+        <label for="lv-cur">現在のレベル</label>
+        <select id="lv-cur">
+          <option value="1">Level 1</option>
+          <option value="2">Level 2</option>
+          <option value="3">Level 3</option>
+          <option value="4">Level 4</option>
+          <option value="5">Level 5</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="lv-req">昇級に必要な回数</label>
+        <input type="number" id="lv-req" min="1" max="999" step="1" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="lv-since">現レベルの開始日</label>
+        <input type="date" id="lv-since">
+      </div>
+      <p class="note">開始日以降に記録した回数が、レベルアップ試験の受験資格に数えられます。空欄にすると全期間の記録を数えます。レベルアップ試験（ベルトテスト）は日曜 18:00 からです。</p>
+
       <h3>基準曜日</h3>
       <div class="wd-grid" id="wd-grid"></div>
-      <p class="note">選んだ曜日がその月に何回あるかを合計して基本回数になります。設定は自動保存され、毎月選び直す必要はありません。</p>
+      <p class="note">選んだ曜日がその月に何回あるかを合計して基本回数になります。設定は自動保存され、毎月選び直す必要はありません。月曜は定休日のため選べません。</p>
 
       <h3>繰り越し</h3>
       <div class="field">
@@ -482,6 +598,36 @@
   const WD_NAMES = ["日", "月", "火", "水", "木", "金", "土"];
   const MAX_WALK = 600;
 
+  /* ---------- 道場のタイムテーブル ---------- */
+  const SLOTS = ["10:00", "11:10", "12:20", "13:30", "18:00", "19:10", "20:20"];
+  const TT_ORDER = [1, 2, 3, 4, 5, 6, 0];  // 月→日の表示順
+  const CLOSED_WD = 1;                     // 月曜は定休日
+  const MAX_LEVEL = 5;
+  const BELT_TEST = "日曜 18:00";
+
+  const LV = {
+    1: { bg: "#f4f4f6", fg: "#3b3546" },
+    2: { bg: "#f5c518", fg: "#3d2f00" },
+    3: { bg: "#f28c28", fg: "#ffffff" },
+    4: { bg: "#5cb85c", fg: "#ffffff" },
+    5: { bg: "#2f7f9e", fg: "#ffffff" }
+  };
+  const SPECIAL = {
+    event: { label: "イベント", bg: "#29abe2" },
+    belt: { label: "ベルトテスト", bg: "#6b2d8b" }
+  };
+
+  // 曜日 → 時間 → 対象レベルの配列（または特別クラス名）
+  const TIMETABLE = {
+    0: { "10:00": [2], "11:10": [3], "12:20": [4, 5], "13:30": [1], "18:00": "belt" },
+    1: "closed",
+    2: { "18:00": [3], "19:10": [1], "20:20": [2] },
+    3: { "18:00": [1], "19:10": [2, 3], "20:20": [1] },
+    4: { "18:00": [2], "19:10": [1], "20:20": [3, 4] },
+    5: { "18:00": [1], "19:10": [2], "20:20": [1] },
+    6: { "10:00": [1], "11:10": [2], "12:20": [3], "13:30": [1], "18:00": "event" }
+  };
+
   /* ---------- 日付ユーティリティ ---------- */
   const pad = n => String(n).padStart(2, "0");
   const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -506,8 +652,16 @@
     baseWeekdays: [0, 2],
     carry: { enabled: true, months: 1, max: null },
     visits: [],
-    startMonth: ym(new Date())
+    startMonth: ym(new Date()),
+    level: 1,
+    levelSince: null,
+    levelReq: 30
   });
+
+  const isClosedDay = ds => {
+    const [y, m, d] = ds.split("-").map(Number);
+    return new Date(y, m - 1, d).getDay() === CLOSED_WD;
+  };
 
   let state = load();
   let view = firstOfMonth(new Date());
@@ -516,7 +670,12 @@
   function load() {
     try {
       const raw = localStorage.getItem(KEY);
-      if (raw) return normalize(JSON.parse(raw));
+      if (raw) {
+        // 正規化した結果を書き戻し、保存内容と実際の挙動を一致させる
+        const s = normalize(JSON.parse(raw));
+        persist(s);
+        return s;
+      }
     } catch (e) { /* 壊れたデータは初期値で置き換える */ }
     const s = defaultState();
     persist(s);
@@ -525,11 +684,18 @@
 
   function normalize(o) {
     const d = defaultState();
+    const lvReq = Number(o.levelReq);
     return {
       version: 1,
+      // 月曜は定休日なので基準曜日には選べない
       baseWeekdays: Array.isArray(o.baseWeekdays)
-        ? [...new Set(o.baseWeekdays.map(Number).filter(n => n >= 0 && n <= 6))].sort((a, b) => a - b)
+        ? [...new Set(o.baseWeekdays.map(Number)
+            .filter(n => n >= 0 && n <= 6 && n !== CLOSED_WD))].sort((a, b) => a - b)
         : d.baseWeekdays,
+      level: Number.isFinite(Number(o.level))
+        ? Math.min(MAX_LEVEL, Math.max(1, Math.floor(o.level))) : d.level,
+      levelSince: /^\d{4}-\d{2}-\d{2}$/.test(o.levelSince) ? o.levelSince : null,
+      levelReq: Number.isFinite(lvReq) && lvReq > 0 ? Math.floor(lvReq) : d.levelReq,
       carry: {
         enabled: o.carry ? o.carry.enabled !== false : true,
         months: o.carry && Number.isFinite(Number(o.carry.months)) ? Math.max(0, Math.floor(o.carry.months)) : 1,
@@ -637,6 +803,7 @@
   function addVisit(dateStr) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return toast("日付を選んでください");
     if (dateStr > iso(new Date())) return toast("未来の日付は記録できません");
+    if (isClosedDay(dateStr)) return toast(`${WD_NAMES[CLOSED_WD]}曜日は定休日です`);
     if (state.visits.includes(dateStr)) return toast(`${fmt(dateStr)} は既に記録済みです`);
     pushVisit(dateStr);
     toast(`${fmt(dateStr)} を記録`, () => {
@@ -692,17 +859,117 @@
     $("row-carryout").hidden = !state.carry.enabled;
 
     renderCalendar(y, m, todayIso);
+    renderLevel();
+    renderTimetable();
 
     const done = state.visits.includes(todayIso);
     const fab = $("fab");
-    fab.disabled = done;
-    fab.textContent = done ? "今日は記録済み ✓" : "今日行った";
+    if (isClosedDay(todayIso)) {
+      fab.disabled = true;
+      fab.textContent = "本日は定休日";
+    } else {
+      fab.disabled = done;
+      fab.textContent = done ? "今日は記録済み ✓" : "今日行った";
+    }
+  }
+
+  /* ---------- レベル ---------- */
+  // 現レベルの開始日以降に記録した回数を、昇級試験の受験資格として数える。
+  function levelProgress() {
+    const since = state.levelSince;
+    const n = state.visits.filter(v => !since || v >= since).length;
+    return { n, req: state.levelReq, ok: n >= state.levelReq };
+  }
+
+  function renderLevel() {
+    const p = levelProgress();
+    const c = LV[state.level] || LV[1];
+    const badge = $("lv-badge");
+    badge.textContent = `Level ${state.level}`;
+    badge.style.background = c.bg;
+    badge.style.color = c.fg;
+
+    $("lv-count").textContent = `${p.n} / ${p.req}回`;
+    $("lv-bar").style.width = `${p.req > 0 ? Math.min(100, p.n / p.req * 100) : 100}%`;
+    $("lv-bar-wrap").classList.toggle("done", p.ok);
+
+    const note = $("lv-note"), btn = $("lv-up");
+    if (state.level >= MAX_LEVEL) {
+      note.className = "lv-note";
+      note.textContent = "最高レベルに到達しています";
+      btn.hidden = true;
+    } else if (p.ok) {
+      note.className = "lv-note ok";
+      note.textContent = `受験資格あり ― ${BELT_TEST} のベルトテストで受験できます`;
+      btn.textContent = `試験に合格した → Level ${state.level + 1} へ`;
+      btn.hidden = false;
+    } else {
+      note.className = "lv-note";
+      note.textContent = `あと ${p.req - p.n}回 でレベルアップ試験（${BELT_TEST}）を受けられます`;
+      btn.hidden = true;
+    }
+  }
+
+  /* ---------- タイムテーブル ---------- */
+  function renderTimetable() {
+    const lv = state.level;
+    $("tt-hint").textContent = `Level ${lv} のクラス`;
+
+    // 自分のレベルが出られるクラスだけを曜日ごとに並べる
+    const rows = TT_ORDER.map(wd => {
+      const day = TIMETABLE[wd];
+      if (day === "closed") return null;
+      const times = SLOTS.filter(t => Array.isArray(day[t]) && day[t].includes(lv));
+      if (!times.length) return null;
+      const cls = wd === 0 ? " sun" : wd === 6 ? " sat" : "";
+      return `<div class="tt-row"><i class="wd${cls}">${WD_NAMES[wd]}</i>` +
+             `<span class="times">${times.join("　/　")}</span></div>`;
+    }).filter(Boolean);
+    $("tt-mine").innerHTML = rows.length
+      ? rows.join("")
+      : `<div class="tt-none">Level ${lv} のクラスはありません</div>`;
+
+    // 全レベルの時間割（横スクロール）
+    const g = ['<div></div>'];
+    TT_ORDER.forEach((wd, i) => {
+      const cls = wd === 0 ? " sun" : wd === 6 ? " sat" : wd === CLOSED_WD ? " mon" : "";
+      g.push(`<div class="tt-h${cls}" style="grid-column:${i + 2};grid-row:1">${WD_NAMES[wd]}</div>`);
+    });
+    SLOTS.forEach((t, r) =>
+      g.push(`<div class="tt-t" style="grid-column:1;grid-row:${r + 2}">${t}</div>`));
+
+    TT_ORDER.forEach((wd, i) => {
+      const col = i + 2, day = TIMETABLE[wd];
+      if (day === "closed") {
+        g.push(`<div class="tt-closed" style="grid-column:${col};` +
+               `grid-row:2/span ${SLOTS.length}">定休日</div>`);
+        return;
+      }
+      SLOTS.forEach((t, r) => {
+        const v = day[t];
+        if (!v) return;
+        if (typeof v === "string") {
+          const sp = SPECIAL[v];
+          g.push(`<div class="tt-sp" style="grid-column:${col};grid-row:${r + 2}/span 3;` +
+                 `background:${sp.bg};color:#fff">${sp.label}</div>`);
+          return;
+        }
+        const bg = v.length === 1
+          ? LV[v[0]].bg
+          : `linear-gradient(90deg,${LV[v[0]].bg} 50%,${LV[v[1]].bg} 50%)`;
+        const fg = v.some(n => n <= 2) ? "#2c2436" : "#ffffff";
+        const mine = v.includes(lv) ? " mine" : "";
+        g.push(`<div class="tt-c${mine}" style="grid-column:${col};grid-row:${r + 2};` +
+               `background:${bg};color:${fg}" title="Level ${v.join("・")}">${v.join("&")}</div>`);
+      });
+    });
+    $("tt-grid").innerHTML = g.join("");
   }
 
   function renderCalendar(y, m, todayIso) {
     const baseSet = new Set(state.baseWeekdays);
     const parts = WD_NAMES.map((n, i) =>
-      `<div class="dow${i === 0 ? " sun" : i === 6 ? " sat" : ""}">${n}</div>`);
+      `<div class="dow${i === 0 ? " sun" : i === 6 ? " sat" : i === CLOSED_WD ? " mon" : ""}">${n}</div>`);
     const lead = new Date(y, m, 1).getDay();
     for (let i = 0; i < lead; i++) parts.push('<div class="cell empty"></div>');
     const dim = daysInMonth(y, m);
@@ -711,6 +978,7 @@
       const wd = new Date(y, m, d).getDay();
       const cls = ["cell"];
       if (baseSet.has(wd)) cls.push("base");
+      if (wd === CLOSED_WD) cls.push("closed");
       if (state.visits.includes(ds)) cls.push("visited");
       if (ds === todayIso) cls.push("today");
       if (ds > todayIso) cls.push("future");
@@ -721,12 +989,17 @@
 
   function renderSettings() {
     $("wd-grid").innerHTML = WD_NAMES.map((n, i) =>
-      `<label><input type="checkbox" data-wd="${i}"${state.baseWeekdays.includes(i) ? " checked" : ""}>${n}</label>`
+      i === CLOSED_WD
+        ? `<label class="off" aria-disabled="true">${n}</label>`
+        : `<label><input type="checkbox" data-wd="${i}"${state.baseWeekdays.includes(i) ? " checked" : ""}>${n}</label>`
     ).join("");
     $("c-enabled").checked = state.carry.enabled;
     $("c-months").value = state.carry.months;
     $("c-max").value = state.carry.max === null ? "" : state.carry.max;
     $("start-month").value = state.startMonth;
+    $("lv-cur").value = String(state.level);
+    $("lv-req").value = state.levelReq;
+    $("lv-since").value = state.levelSince || "";
   }
 
   let toastTimer;
@@ -796,6 +1069,40 @@
     state.baseWeekdays = [...set].sort((a, b) => a - b);
     save();
   });
+
+  // レベルアップも取り消せるようにしておく（誤タップ対策）
+  $("lv-up").onclick = () => {
+    if (state.level >= MAX_LEVEL) return;
+    const prev = { level: state.level, since: state.levelSince };
+    state.level = prev.level + 1;
+    state.levelSince = iso(new Date());
+    save();
+    renderSettings();
+    toast(`Level ${state.level} になりました`, () => {
+      state.level = prev.level;
+      state.levelSince = prev.since;
+      save();
+      renderSettings();
+      toast("レベルを戻しました");
+    });
+  };
+
+  $("lv-cur").onchange = e => {
+    state.level = Math.min(MAX_LEVEL, Math.max(1, Number(e.target.value) || 1));
+    save();
+  };
+  $("lv-req").onchange = e => {
+    const n = Number(e.target.value);
+    state.levelReq = Number.isFinite(n) && n > 0 ? Math.floor(n) : 30;
+    e.target.value = state.levelReq;
+    save();
+  };
+  $("lv-since").onchange = e => {
+    const v = e.target.value;
+    state.levelSince = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
+    e.target.value = state.levelSince || "";
+    save();
+  };
 
   $("c-enabled").onchange = e => { state.carry.enabled = e.target.checked; save(); };
   $("c-months").onchange = e => {
