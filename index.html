@@ -217,6 +217,24 @@
   }
   .lv-up[hidden] { display: none; }
 
+  .lv-hist {
+    margin-top: 16px; border-top: 1px solid var(--line); padding-top: 13px;
+    display: grid; gap: 7px;
+  }
+  .lv-hist .h { font-size: 11.5px; font-weight: 800; letter-spacing: .08em; color: var(--muted); }
+  .lv-hist .r { display: flex; align-items: center; gap: 9px; font-size: 14px; }
+  .lv-hist .c {
+    width: 26px; height: 26px; flex: 0 0 auto; border-radius: 8px; font-style: normal;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; box-shadow: inset 0 0 0 1px rgba(36, 29, 43, .1);
+  }
+  .lv-hist .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .lv-hist .r.now .n { color: var(--purple-deep); }
+  .lv-hist .tag {
+    font-size: 11px; font-weight: 800; color: var(--purple);
+    background: var(--purple-soft); border-radius: 99px; padding: 2px 9px;
+  }
+
   /* ---------- タイムテーブル ---------- */
   .tt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
   .tt-top h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
@@ -514,6 +532,7 @@
     <div class="bar" id="lv-bar-wrap"><i id="lv-bar"></i></div>
     <div class="lv-note" id="lv-note"></div>
     <button class="lv-up" id="lv-up" hidden></button>
+    <div class="lv-hist" id="lv-hist"></div>
   </section>
 
   <section class="card">
@@ -535,11 +554,7 @@
         <label for="lv-req">昇級に必要な回数</label>
         <input type="number" id="lv-req" min="1" max="999" step="1" inputmode="numeric">
       </div>
-      <div class="field">
-        <label for="lv-since">現レベルの開始日</label>
-        <input type="date" id="lv-since">
-      </div>
-      <p class="note">開始日以降に記録した回数が、レベルアップ試験の受験資格に数えられます。空欄にすると全期間の記録を数えます。レベルアップ試験（ベルトテスト）は日曜 18:00 からです。</p>
+      <p class="note">記録は 1 件ごとに「そのときのレベル」を保存します。レベルを変えても過去の記録のレベルは変わらないので、レベル別の回数はずっと残ります。ここでレベルを変えると、<strong>以降に記録する分</strong>が新しいレベルになります。レベルアップ試験（ベルトテスト）は日曜 18:00 からです。</p>
 
       <h3>基準曜日</h3>
       <div class="wd-grid" id="wd-grid"></div>
@@ -647,7 +662,7 @@
   const CLOSED_WD = 1;                     // 月曜は定休日
   const MAX_LEVEL = 5;
   const LEVEL_REQ = 30;                    // 昇級試験の受験に必要な受講回数（既定値）
-  const APP_VERSION = "2026-08-10 / v6";   // 更新確認用の表示
+  const APP_VERSION = "2026-08-10 / v7";   // 更新確認用の表示
   const BELT_TEST = "日曜 18:00";
 
   const LV = {
@@ -699,9 +714,32 @@
     visits: [],
     startMonth: ym(new Date()),
     level: 1,
-    levelSince: null,
     levelReq: LEVEL_REQ
   });
+
+  // 記録は 1件ごとに「日付 + そのときのレベル」を持つ。
+  // 旧形式（日付の文字列だけ）のデータも読み込めるように移行する。
+  function normalizeVisits(raw, level, legacySince) {
+    if (!Array.isArray(raw)) return [];
+    const seen = new Set();
+    const out = [];
+    for (const item of raw) {
+      const d = typeof item === "string" ? item : item && item.d;
+      const lv = typeof item === "string" ? null : item && item.lv;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d) || seen.has(d)) continue;
+      seen.add(d);
+      const n = Number(lv);
+      out.push({ d, lv: Number.isFinite(n) && n >= 1 && n <= MAX_LEVEL ? Math.floor(n) : null });
+    }
+    out.sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
+    // レベル未設定の記録は、移行時点で分かる範囲のレベルを当てる
+    out.forEach(v => {
+      if (v.lv === null) v.lv = legacySince && v.d < legacySince ? 1 : level;
+    });
+    return out;
+  }
+
+  const hasVisit = ds => state.visits.some(v => v.d === ds);
 
   const isClosedDay = ds => {
     const [y, m, d] = ds.split("-").map(Number);
@@ -729,16 +767,17 @@
 
   function normalize(o) {
     const d = defaultState();
+    const level = Number.isFinite(Number(o.level))
+      ? Math.min(MAX_LEVEL, Math.max(1, Math.floor(o.level))) : d.level;
+    const legacySince = /^\d{4}-\d{2}-\d{2}$/.test(o.levelSince) ? o.levelSince : null;
     return {
-      version: 1,
+      version: 2,
       // 月曜は定休日なので基準曜日には選べない
       baseWeekdays: Array.isArray(o.baseWeekdays)
         ? [...new Set(o.baseWeekdays.map(Number)
             .filter(n => n >= 0 && n <= 6 && n !== CLOSED_WD))].sort((a, b) => a - b)
         : d.baseWeekdays,
-      level: Number.isFinite(Number(o.level))
-        ? Math.min(MAX_LEVEL, Math.max(1, Math.floor(o.level))) : d.level,
-      levelSince: /^\d{4}-\d{2}-\d{2}$/.test(o.levelSince) ? o.levelSince : null,
+      level,
       levelReq: Number.isFinite(Number(o.levelReq)) && Number(o.levelReq) > 0
         ? Math.floor(Number(o.levelReq)) : d.levelReq,
       carry: {
@@ -747,9 +786,7 @@
         max: o.carry && o.carry.max !== null && o.carry.max !== undefined && Number.isFinite(Number(o.carry.max))
           ? Math.max(0, Math.floor(o.carry.max)) : null
       },
-      visits: Array.isArray(o.visits)
-        ? [...new Set(o.visits.filter(v => /^\d{4}-\d{2}-\d{2}$/.test(v)))].sort()
-        : [],
+      visits: normalizeVisits(o.visits, level, legacySince),
       startMonth: /^\d{4}-\d{2}$/.test(o.startMonth) ? o.startMonth : d.startMonth
     };
   }
@@ -764,14 +801,14 @@
   /* ---------- 集計 ---------- */
   function visitCountAt(idx) {
     const key = ymOfIdx(idx);
-    return state.visits.filter(v => v.slice(0, 7) === key).length;
+    return state.visits.filter(v => v.d.slice(0, 7) === key).length;
   }
 
   // 表示中の月について、繰り越しを含めた集計を返す。
   // 開始月から順に走らせるので、過去月の実績を直したら以降も自動で再計算される。
   function summary(target) {
     const targetIdx = idxOf(target);
-    const visitIdxs = state.visits.map(v => idxOfYm(v.slice(0, 7)));
+    const visitIdxs = state.visits.map(v => idxOfYm(v.d.slice(0, 7)));
     let startIdx = Math.min(idxOfYm(state.startMonth), targetIdx, ...(visitIdxs.length ? visitIdxs : [targetIdx]));
     startIdx = Math.max(startIdx, targetIdx - MAX_WALK);
 
@@ -829,18 +866,20 @@
   }
 
   /* ---------- 記録の追加 / 削除 ---------- */
-  function pushVisit(dateStr) {
-    state.visits.push(dateStr);
-    state.visits.sort();
+  // 記録するときのレベルを一緒に保存する（あとでレベル別に集計するため）
+  function pushVisit(dateStr, lv) {
+    state.visits.push({ d: dateStr, lv: lv || state.level });
+    state.visits.sort((a, b) => a.d < b.d ? -1 : a.d > b.d ? 1 : 0);
     save();
   }
 
+  // 取り消した記録をそのまま返し、「元に戻す」で当時のレベルごと復元できるようにする
   function dropVisit(dateStr) {
-    const i = state.visits.indexOf(dateStr);
-    if (i < 0) return false;
-    state.visits.splice(i, 1);
+    const i = state.visits.findIndex(v => v.d === dateStr);
+    if (i < 0) return null;
+    const [removed] = state.visits.splice(i, 1);
     save();
-    return true;
+    return removed;
   }
 
   // 記録も取り消しも確認ダイアログなしで即実行し、
@@ -849,18 +888,19 @@
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return toast("日付を選んでください");
     if (dateStr > iso(new Date())) return toast("未来の日付は記録できません");
     if (isClosedDay(dateStr)) return toast(`${WD_NAMES[CLOSED_WD]}曜日は定休日です`);
-    if (state.visits.includes(dateStr)) return toast(`${fmt(dateStr)} は既に記録済みです`);
+    if (hasVisit(dateStr)) return toast(`${fmt(dateStr)} は既に記録済みです`);
     pushVisit(dateStr);
-    toast(`${fmt(dateStr)} を記録`, () => {
+    toast(`${fmt(dateStr)} を記録（Level ${state.level}）`, () => {
       dropVisit(dateStr);
       toast(`${fmt(dateStr)} を取り消しました`);
     });
   }
 
   function removeVisit(dateStr) {
-    if (!dropVisit(dateStr)) return;
+    const removed = dropVisit(dateStr);
+    if (!removed) return;
     toast(`${fmt(dateStr)} を取り消し`, () => {
-      pushVisit(dateStr);
+      pushVisit(removed.d, removed.lv);
       toast(`${fmt(dateStr)} を記録しました`);
     });
   }
@@ -907,7 +947,7 @@
     renderLevel();
     renderTimetable();
 
-    const done = state.visits.includes(todayIso);
+    const done = hasVisit(todayIso);
     const fab = $("fab");
     if (isClosedDay(todayIso)) {
       fab.disabled = true;
@@ -919,10 +959,15 @@
   }
 
   /* ---------- レベル ---------- */
-  // 現レベルの開始日以降に記録した回数を、昇級試験の受験資格として数える。
+  // レベル別の受講回数。記録1件ごとに保存したレベルで数える。
+  function levelCounts() {
+    const m = new Map();
+    state.visits.forEach(v => m.set(v.lv, (m.get(v.lv) || 0) + 1));
+    return m;
+  }
+
   function levelProgress() {
-    const since = state.levelSince;
-    const n = state.visits.filter(v => !since || v >= since).length;
+    const n = levelCounts().get(state.level) || 0;
     return { n, req: state.levelReq, ok: n >= state.levelReq };
   }
 
@@ -953,6 +998,20 @@
       note.textContent = `Level ${state.level} で ${p.req}回 受講するとレベルアップ試験（${BELT_TEST} のベルトテスト）を受けられます。あと ${p.req - p.n}回。`;
       btn.hidden = true;
     }
+
+    // レベル別の記録（過去のレベルの回数も残る）
+    const counts = levelCounts();
+    const rows = [];
+    for (let n = 1; n <= MAX_LEVEL; n++) {
+      const cnt = counts.get(n) || 0;
+      if (!cnt && n !== state.level) continue;
+      const lc = LV[n];
+      rows.push(`<div class="r${n === state.level ? " now" : ""}">` +
+        `<i class="c" style="background:${lc.bg};color:${lc.fg}">${n}</i>` +
+        `<span class="n">${cnt}回</span>` +
+        (n === state.level ? `<span class="tag">いま</span>` : "") + `</div>`);
+    }
+    $("lv-hist").innerHTML = `<div class="h">レベル別の記録</div>` + rows.join("");
   }
 
   /* ---------- タイムテーブル ---------- */
@@ -1063,7 +1122,7 @@
       const cls = ["cell"];
       if (baseSet.has(wd)) cls.push("base");
       if (wd === CLOSED_WD) cls.push("closed");
-      if (state.visits.includes(ds)) cls.push("visited");
+      if (hasVisit(ds)) cls.push("visited");
       if (ds === todayIso) cls.push("today");
       if (ds > todayIso) cls.push("future");
       parts.push(`<button class="${cls.join(" ")}" data-date="${ds}"><span class="n">${d}</span></button>`);
@@ -1081,7 +1140,6 @@
     $("c-months").value = state.carry.months;
     $("c-max").value = state.carry.max === null ? "" : state.carry.max;
     $("start-month").value = state.startMonth;
-    $("lv-since").value = state.levelSince || "";
     $("lv-cur").value = String(state.level);
     $("lv-req").value = state.levelReq;
     $("app-ver").textContent = APP_VERSION;
@@ -1142,7 +1200,7 @@
     const btn = e.target.closest("button[data-date]");
     if (!btn) return;
     const ds = btn.dataset.date;
-    if (state.visits.includes(ds)) removeVisit(ds);
+    if (hasVisit(ds)) removeVisit(ds);
     else addVisit(ds);
   });
 
@@ -1156,19 +1214,18 @@
   });
 
   // レベルアップも取り消せるようにしておく（誤タップ対策）
+  // 昇級しても過去の記録はそのレベルのまま残る（各記録がレベルを持っているため）
   $("lv-up").onclick = () => {
     if (state.level >= MAX_LEVEL) return;
-    const prev = { level: state.level, since: state.levelSince };
-    state.level = prev.level + 1;
-    state.levelSince = iso(new Date());
+    const prev = state.level;
+    state.level = prev + 1;
     save();
     renderSettings();
     toast(`Level ${state.level} になりました`, () => {
-      state.level = prev.level;
-      state.levelSince = prev.since;
+      state.level = prev;
       save();
       renderSettings();
-      toast("レベルを戻しました");
+      toast(`Level ${prev} に戻しました`);
     });
   };
 
@@ -1201,13 +1258,6 @@
     location.replace(location.pathname + "?u=" + Date.now());
   };
 
-  $("lv-since").onchange = e => {
-    const v = e.target.value;
-    state.levelSince = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
-    e.target.value = state.levelSince || "";
-    save();
-  };
-
   $("c-enabled").onchange = e => { state.carry.enabled = e.target.checked; save(); };
   $("c-months").onchange = e => {
     const n = Number(e.target.value);
@@ -1231,9 +1281,9 @@
     download(`fitness-backup-${stamp()}.json`, JSON.stringify(state, null, 2), "application/json");
 
   $("btn-export-csv").onclick = () => {
-    const rows = ["date,weekday", ...state.visits.map(v => {
-      const [y, m, d] = v.split("-").map(Number);
-      return `${v},${WD_NAMES[new Date(y, m - 1, d).getDay()]}`;
+    const rows = ["date,weekday,level", ...state.visits.map(v => {
+      const [y, m, d] = v.d.split("-").map(Number);
+      return `${v.d},${WD_NAMES[new Date(y, m - 1, d).getDay()]},${v.lv}`;
     })];
     download(`fitness-visits-${stamp()}.csv`, "﻿" + rows.join("\r\n"), "text/csv");
   };
