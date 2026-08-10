@@ -323,12 +323,7 @@
     opacity: .45; text-decoration: line-through;
     background: repeating-linear-gradient(45deg, #f1eef4 0 4px, #fbfafc 4px 8px);
   }
-  .lv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
-  .lv-grid button {
-    border: none; border-radius: 14px; padding: 14px 4px; font-size: 15px; font-weight: 800;
-    background: #fbf9fc; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted);
-  }
-  .lv-grid button.on { box-shadow: inset 0 0 0 2px var(--purple); }
+  .field select { min-width: 8.5em; }
   .field {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: 11px 0; font-size: 14.5px;
@@ -525,15 +520,26 @@
     <details class="set" id="settings">
       <summary>設定とバックアップ</summary>
 
-      <h3>今のレベルを登録</h3>
-      <div class="lv-grid" id="lv-grid"></div>
-      <p class="note">タップで登録します。タイムテーブルの表示も選んだレベルに切り替わります。間違えた場合は下に出るメッセージの「元に戻す」で戻せます。</p>
-
+      <h3>レベル</h3>
+      <div class="field">
+        <label for="lv-cur">今のレベル</label>
+        <select id="lv-cur">
+          <option value="1">Level 1</option>
+          <option value="2">Level 2</option>
+          <option value="3">Level 3</option>
+          <option value="4">Level 4</option>
+          <option value="5">Level 5</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="lv-req">昇級に必要な回数</label>
+        <input type="number" id="lv-req" min="1" max="999" step="1" inputmode="numeric">
+      </div>
       <div class="field">
         <label for="lv-since">現レベルの開始日</label>
         <input type="date" id="lv-since">
       </div>
-      <p class="note">開始日以降に記録した回数が、レベルアップ試験の受験資格（<strong>30回</strong>）に数えられます。空欄にすると全期間の記録を数えます。レベルアップ試験（ベルトテスト）は日曜 18:00 からです。</p>
+      <p class="note">開始日以降に記録した回数が、レベルアップ試験の受験資格に数えられます。空欄にすると全期間の記録を数えます。レベルアップ試験（ベルトテスト）は日曜 18:00 からです。</p>
 
       <h3>基準曜日</h3>
       <div class="wd-grid" id="wd-grid"></div>
@@ -592,6 +598,16 @@
         他人に一時的に貸すときなどは「再ロック」を押してください。
       </p>
 
+      <h3>アプリの更新</h3>
+      <div class="field">
+        <label>いま動いている版</label>
+        <strong id="app-ver">-</strong>
+      </div>
+      <div class="btn-row">
+        <button id="btn-refresh">最新版に更新する</button>
+      </div>
+      <p class="note">表示や動きが説明と違うときは、古い版が端末に残っている可能性があります。このボタンを押すと保存済みの表示データを消して読み込み直します。<strong>利用記録・設定は消えません。</strong></p>
+
       <h3>計算の開始月</h3>
       <div class="field">
         <label for="start-month">繰り越し計算の開始月</label>
@@ -630,7 +646,8 @@
   const TT_ORDER = [1, 2, 3, 4, 5, 6, 0];  // 月→日の表示順
   const CLOSED_WD = 1;                     // 月曜は定休日
   const MAX_LEVEL = 5;
-  const LEVEL_REQ = 30;                    // 昇級試験の受験に必要な受講回数
+  const LEVEL_REQ = 30;                    // 昇級試験の受験に必要な受講回数（既定値）
+  const APP_VERSION = "2026-08-10 / v6";   // 更新確認用の表示
   const BELT_TEST = "日曜 18:00";
 
   const LV = {
@@ -682,7 +699,8 @@
     visits: [],
     startMonth: ym(new Date()),
     level: 1,
-    levelSince: null
+    levelSince: null,
+    levelReq: LEVEL_REQ
   });
 
   const isClosedDay = ds => {
@@ -721,6 +739,8 @@
       level: Number.isFinite(Number(o.level))
         ? Math.min(MAX_LEVEL, Math.max(1, Math.floor(o.level))) : d.level,
       levelSince: /^\d{4}-\d{2}-\d{2}$/.test(o.levelSince) ? o.levelSince : null,
+      levelReq: Number.isFinite(Number(o.levelReq)) && Number(o.levelReq) > 0
+        ? Math.floor(Number(o.levelReq)) : d.levelReq,
       carry: {
         enabled: o.carry ? o.carry.enabled !== false : true,
         months: o.carry && Number.isFinite(Number(o.carry.months)) ? Math.max(0, Math.floor(o.carry.months)) : 1,
@@ -903,7 +923,7 @@
   function levelProgress() {
     const since = state.levelSince;
     const n = state.visits.filter(v => !since || v >= since).length;
-    return { n, req: LEVEL_REQ, ok: n >= LEVEL_REQ };
+    return { n, req: state.levelReq, ok: n >= state.levelReq };
   }
 
   function renderLevel() {
@@ -1062,11 +1082,9 @@
     $("c-max").value = state.carry.max === null ? "" : state.carry.max;
     $("start-month").value = state.startMonth;
     $("lv-since").value = state.levelSince || "";
-    $("lv-grid").innerHTML = Array.from({ length: MAX_LEVEL }, (_, i) => {
-      const n = i + 1, on = n === state.level, c = LV[n];
-      return `<button type="button" data-lv="${n}"${on ? ` class="on" style="background:${c.bg};color:${c.fg}"` : ""}` +
-             ` aria-pressed="${on}">${n}</button>`;
-    }).join("");
+    $("lv-cur").value = String(state.level);
+    $("lv-req").value = state.levelReq;
+    $("app-ver").textContent = APP_VERSION;
   }
 
   let toastTimer;
@@ -1154,22 +1172,34 @@
     });
   };
 
-  $("lv-grid").addEventListener("click", e => {
-    const b = e.target.closest("button[data-lv]");
-    if (!b) return;
-    const n = Number(b.dataset.lv);
-    if (n === state.level) return;
-    const prev = state.level;
-    state.level = n;
+  $("lv-cur").onchange = e => {
+    state.level = Math.min(MAX_LEVEL, Math.max(1, Number(e.target.value) || 1));
     save();
-    renderSettings();
-    toast(`Level ${n} に登録しました`, () => {
-      state.level = prev;
-      save();
-      renderSettings();
-      toast(`Level ${prev} に戻しました`);
-    });
-  });
+    toast(`Level ${state.level} に登録しました`);
+  };
+  $("lv-req").onchange = e => {
+    const n = Number(e.target.value);
+    state.levelReq = Number.isFinite(n) && n > 0 ? Math.floor(n) : LEVEL_REQ;
+    e.target.value = state.levelReq;
+    save();
+  };
+
+  // 端末に残った古い版を確実に捨てて読み込み直す（利用記録は localStorage なので残る）
+  $("btn-refresh").onclick = async () => {
+    $("btn-refresh").disabled = true;
+    toast("最新版を取得しています…");
+    try {
+      if (window.caches) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+      if (navigator.serviceWorker) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+    } catch (e) { /* 消せなくても読み込み直しは行う */ }
+    location.replace(location.pathname + "?u=" + Date.now());
+  };
 
   $("lv-since").onchange = e => {
     const v = e.target.value;
