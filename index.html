@@ -218,16 +218,44 @@
   .lv-up[hidden] { display: none; }
 
   /* ---------- タイムテーブル ---------- */
-  .tt-mine { display: grid; gap: 7px; }
-  .tt-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+  .tt-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
+  .tt-top h2 { margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .06em; color: var(--muted); }
+  .tt-lv {
+    font-size: 12.5px; font-weight: 800; padding: 5px 13px; border-radius: 99px;
+    box-shadow: inset 0 0 0 1px rgba(36, 29, 43, .1); white-space: nowrap;
+  }
+
+  .tt-next {
+    display: flex; align-items: baseline; gap: 11px; flex-wrap: wrap;
+    background: var(--purple-soft); border-radius: 16px; padding: 12px 15px; margin-bottom: 16px;
+  }
+  .tt-next .lbl { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; color: var(--purple-deep); }
+  .tt-next .val {
+    font-size: 21px; font-weight: 800; letter-spacing: -.01em;
+    font-variant-numeric: tabular-nums; color: var(--purple-deep);
+  }
+  .tt-next.rest { background: #f4f1f6; }
+  .tt-next.rest .lbl, .tt-next.rest .val { color: var(--muted); }
+  .tt-next[hidden] { display: none; }
+
+  .tt-mine { display: grid; gap: 6px; }
+  .tt-row { display: flex; align-items: center; gap: 9px; }
   .tt-row .wd {
-    width: 27px; height: 27px; flex: 0 0 auto; border-radius: 9px; font-style: normal;
+    width: 30px; height: 30px; flex: 0 0 auto; border-radius: 10px; font-style: normal;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 800; background: #f4f1f6; color: var(--muted);
+    font-size: 13px; font-weight: 800; background: #f4f1f6; color: var(--muted);
   }
   .tt-row .wd.sun { background: #ffe4ef; color: #be185d; }
   .tt-row .wd.sat { background: #e3edfd; color: #1d4ed8; }
-  .tt-row .times { font-variant-numeric: tabular-nums; font-weight: 600; letter-spacing: .01em; }
+  .tt-row .tslot {
+    font-size: 14.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+    background: #fbf9fc; box-shadow: inset 0 0 0 1px var(--line);
+    border-radius: 10px; padding: 5px 11px;
+  }
+  .tt-row.today .wd { background: var(--purple); color: #fff; }
+  .tt-row.today .tslot {
+    background: var(--purple-soft); box-shadow: inset 0 0 0 1px #dccffb; color: var(--purple-deep);
+  }
   .tt-none { font-size: 13.5px; color: var(--faint); }
 
   .tt-scroll { overflow-x: auto; margin-top: 12px; padding-bottom: 4px; }
@@ -295,6 +323,12 @@
     opacity: .45; text-decoration: line-through;
     background: repeating-linear-gradient(45deg, #f1eef4 0 4px, #fbfafc 4px 8px);
   }
+  .lv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+  .lv-grid button {
+    border: none; border-radius: 14px; padding: 14px 4px; font-size: 15px; font-weight: 800;
+    background: #fbf9fc; box-shadow: inset 0 0 0 1px var(--line); color: var(--muted);
+  }
+  .lv-grid button.on { box-shadow: inset 0 0 0 2px var(--purple); }
   .field {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
     padding: 11px 0; font-size: 14.5px;
@@ -426,6 +460,23 @@
   </div>
 
   <section class="card">
+    <div class="tt-top">
+      <h2>タイムテーブル</h2>
+      <span class="tt-lv" id="tt-lv">Level 1</span>
+    </div>
+    <div class="tt-next" id="tt-next">
+      <span class="lbl" id="tt-next-lbl">次のクラス</span>
+      <span class="val" id="tt-next-val"></span>
+    </div>
+    <div class="tt-mine" id="tt-mine"></div>
+    <details class="fold">
+      <summary>全レベルの時間割を見る</summary>
+      <div class="tt-scroll"><div class="tt-grid" id="tt-grid"></div></div>
+      <p class="note">マスの数字は対象レベル。紫の枠が自分のレベルのクラスです。</p>
+    </details>
+  </section>
+
+  <section class="card">
     <div class="hero-txt" id="hero-txt">
       <div class="cap" id="hero-cap">のこり</div>
       <div class="big"><span id="hero-num">0</span><small id="hero-unit">回</small></div>
@@ -471,42 +522,18 @@
   </section>
 
   <section class="card">
-    <div class="cal-head">
-      <h2>タイムテーブル</h2>
-      <span class="hint" id="tt-hint"></span>
-    </div>
-    <div class="tt-mine" id="tt-mine"></div>
-    <details class="fold">
-      <summary>全レベルの時間割を見る</summary>
-      <div class="tt-scroll"><div class="tt-grid" id="tt-grid"></div></div>
-      <p class="note">マスの数字は対象レベル。紫の枠が自分のレベルのクラスです。</p>
-    </details>
-  </section>
-
-  <section class="card">
     <details class="set" id="settings">
       <summary>設定とバックアップ</summary>
 
-      <h3>レベル</h3>
-      <div class="field">
-        <label for="lv-cur">現在のレベル</label>
-        <select id="lv-cur">
-          <option value="1">Level 1</option>
-          <option value="2">Level 2</option>
-          <option value="3">Level 3</option>
-          <option value="4">Level 4</option>
-          <option value="5">Level 5</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="lv-req">昇級に必要な回数</label>
-        <input type="number" id="lv-req" min="1" max="999" step="1" inputmode="numeric">
-      </div>
+      <h3>今のレベルを登録</h3>
+      <div class="lv-grid" id="lv-grid"></div>
+      <p class="note">タップで登録します。タイムテーブルの表示も選んだレベルに切り替わります。間違えた場合は下に出るメッセージの「元に戻す」で戻せます。</p>
+
       <div class="field">
         <label for="lv-since">現レベルの開始日</label>
         <input type="date" id="lv-since">
       </div>
-      <p class="note">開始日以降に記録した回数が、レベルアップ試験の受験資格に数えられます。空欄にすると全期間の記録を数えます。レベルアップ試験（ベルトテスト）は日曜 18:00 からです。</p>
+      <p class="note">開始日以降に記録した回数が、レベルアップ試験の受験資格（<strong>30回</strong>）に数えられます。空欄にすると全期間の記録を数えます。レベルアップ試験（ベルトテスト）は日曜 18:00 からです。</p>
 
       <h3>基準曜日</h3>
       <div class="wd-grid" id="wd-grid"></div>
@@ -603,6 +630,7 @@
   const TT_ORDER = [1, 2, 3, 4, 5, 6, 0];  // 月→日の表示順
   const CLOSED_WD = 1;                     // 月曜は定休日
   const MAX_LEVEL = 5;
+  const LEVEL_REQ = 30;                    // 昇級試験の受験に必要な受講回数
   const BELT_TEST = "日曜 18:00";
 
   const LV = {
@@ -654,8 +682,7 @@
     visits: [],
     startMonth: ym(new Date()),
     level: 1,
-    levelSince: null,
-    levelReq: 30
+    levelSince: null
   });
 
   const isClosedDay = ds => {
@@ -684,7 +711,6 @@
 
   function normalize(o) {
     const d = defaultState();
-    const lvReq = Number(o.levelReq);
     return {
       version: 1,
       // 月曜は定休日なので基準曜日には選べない
@@ -695,7 +721,6 @@
       level: Number.isFinite(Number(o.level))
         ? Math.min(MAX_LEVEL, Math.max(1, Math.floor(o.level))) : d.level,
       levelSince: /^\d{4}-\d{2}-\d{2}$/.test(o.levelSince) ? o.levelSince : null,
-      levelReq: Number.isFinite(lvReq) && lvReq > 0 ? Math.floor(lvReq) : d.levelReq,
       carry: {
         enabled: o.carry ? o.carry.enabled !== false : true,
         months: o.carry && Number.isFinite(Number(o.carry.months)) ? Math.max(0, Math.floor(o.carry.months)) : 1,
@@ -878,7 +903,7 @@
   function levelProgress() {
     const since = state.levelSince;
     const n = state.visits.filter(v => !since || v >= since).length;
-    return { n, req: state.levelReq, ok: n >= state.levelReq };
+    return { n, req: LEVEL_REQ, ok: n >= LEVEL_REQ };
   }
 
   function renderLevel() {
@@ -905,25 +930,64 @@
       btn.hidden = false;
     } else {
       note.className = "lv-note";
-      note.textContent = `あと ${p.req - p.n}回 でレベルアップ試験（${BELT_TEST}）を受けられます`;
+      note.textContent = `Level ${state.level} で ${p.req}回 受講するとレベルアップ試験（${BELT_TEST} のベルトテスト）を受けられます。あと ${p.req - p.n}回。`;
       btn.hidden = true;
     }
   }
 
   /* ---------- タイムテーブル ---------- */
+  // 自分のレベルが出られるクラスを、今から先へ順に探す
+  function nextClass(lv) {
+    const now = new Date();
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+    for (let add = 0; add < 8; add++) {
+      const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + add);
+      const day = TIMETABLE[d.getDay()];
+      if (day === "closed") continue;
+      for (const t of SLOTS) {
+        if (!Array.isArray(day[t]) || !day[t].includes(lv)) continue;
+        const [hh, mm] = t.split(":").map(Number);
+        if (add === 0 && nowMin >= hh * 60 + mm) continue;
+        return { wd: d.getDay(), time: t, add };
+      }
+    }
+    return null;
+  }
+
   function renderTimetable() {
     const lv = state.level;
-    $("tt-hint").textContent = `Level ${lv} のクラス`;
+    const c = LV[lv] || LV[1];
+    const badge = $("tt-lv");
+    badge.textContent = `Level ${lv}`;
+    badge.style.background = c.bg;
+    badge.style.color = c.fg;
 
-    // 自分のレベルが出られるクラスだけを曜日ごとに並べる
+    const todayWd = new Date().getDay();
+
+    // 次のクラス
+    const nx = nextClass(lv);
+    const banner = $("tt-next");
+    if (nx) {
+      const when = nx.add === 0 ? "今日" : nx.add === 1 ? "明日" : `${WD_NAMES[nx.wd]}曜`;
+      banner.hidden = false;
+      banner.classList.toggle("rest", todayWd === CLOSED_WD);
+      $("tt-next-lbl").textContent = todayWd === CLOSED_WD ? "本日は定休日 ― 次のクラス" : "次のクラス";
+      $("tt-next-val").textContent = `${when} ${nx.time}`;
+    } else {
+      banner.hidden = true;
+    }
+
+    // 自分のレベルが出られるクラスを曜日ごとに並べる
     const rows = TT_ORDER.map(wd => {
       const day = TIMETABLE[wd];
       if (day === "closed") return null;
       const times = SLOTS.filter(t => Array.isArray(day[t]) && day[t].includes(lv));
       if (!times.length) return null;
       const cls = wd === 0 ? " sun" : wd === 6 ? " sat" : "";
-      return `<div class="tt-row"><i class="wd${cls}">${WD_NAMES[wd]}</i>` +
-             `<span class="times">${times.join("　/　")}</span></div>`;
+      return `<div class="tt-row${wd === todayWd ? " today" : ""}">` +
+             `<i class="wd${cls}">${WD_NAMES[wd]}</i>` +
+             times.map(t => `<b class="tslot">${t}</b>`).join("") +
+             `</div>`;
     }).filter(Boolean);
     $("tt-mine").innerHTML = rows.length
       ? rows.join("")
@@ -997,9 +1061,12 @@
     $("c-months").value = state.carry.months;
     $("c-max").value = state.carry.max === null ? "" : state.carry.max;
     $("start-month").value = state.startMonth;
-    $("lv-cur").value = String(state.level);
-    $("lv-req").value = state.levelReq;
     $("lv-since").value = state.levelSince || "";
+    $("lv-grid").innerHTML = Array.from({ length: MAX_LEVEL }, (_, i) => {
+      const n = i + 1, on = n === state.level, c = LV[n];
+      return `<button type="button" data-lv="${n}"${on ? ` class="on" style="background:${c.bg};color:${c.fg}"` : ""}` +
+             ` aria-pressed="${on}">${n}</button>`;
+    }).join("");
   }
 
   let toastTimer;
@@ -1087,16 +1154,23 @@
     });
   };
 
-  $("lv-cur").onchange = e => {
-    state.level = Math.min(MAX_LEVEL, Math.max(1, Number(e.target.value) || 1));
+  $("lv-grid").addEventListener("click", e => {
+    const b = e.target.closest("button[data-lv]");
+    if (!b) return;
+    const n = Number(b.dataset.lv);
+    if (n === state.level) return;
+    const prev = state.level;
+    state.level = n;
     save();
-  };
-  $("lv-req").onchange = e => {
-    const n = Number(e.target.value);
-    state.levelReq = Number.isFinite(n) && n > 0 ? Math.floor(n) : 30;
-    e.target.value = state.levelReq;
-    save();
-  };
+    renderSettings();
+    toast(`Level ${n} に登録しました`, () => {
+      state.level = prev;
+      save();
+      renderSettings();
+      toast(`Level ${prev} に戻しました`);
+    });
+  });
+
   $("lv-since").onchange = e => {
     const v = e.target.value;
     state.levelSince = /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : null;
